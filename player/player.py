@@ -7,9 +7,9 @@ def get_move(view):
     hasPlant = view.GetPlantInfo() == game_interface.STATUS_UNKNOWN_PLANT
 
     # Choose a random direction.
-    if hasPlant:
-        for i in xrange(5):
-            print view.GetImage()
+    # if hasPlant:
+        # for i in xrange(5):
+            # print view.GetImage()
 
     #time.sleep(0.1)
 
