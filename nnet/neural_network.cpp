@@ -20,8 +20,7 @@ using namespace std;
 //
 
 /**
- * example_mean - Take the average of a collection of examples, asserting that
- * they have the same label.
+ * example_mean - Take the average of a collection of examples.
  */
 static
 Example
@@ -40,6 +39,32 @@ example_mean(vector<Example> examples)
 
   for (i = 0; i < ex.input.size(); ++i) {
     ex.input[i] += examples.size();
+  }
+
+  return ex;
+}
+
+/**
+ * example_majority - Take the majority vote of a collection of examples for
+ * each feature.
+ */
+static
+Example
+example_majority(vector<Example> examples)
+{
+  unsigned i;
+  vector<Example>::iterator it;
+
+  Example ex(examples[0].input, examples[0].target);
+
+  for (it = examples.begin(), ++it; it != examples.end(); ++it) {
+    for (i = 0; i < it->input.size(); ++i) {
+      ex.input[i] += it->input[i];
+    }
+  }
+
+  for (i = 0; i < ex.input.size(); ++i) {
+    ex.input[i] = ex.input[i] > examples.size() / 2 ? 1.0 : 0.0;
   }
 
   return ex;
@@ -67,6 +92,33 @@ sample_average(vector<Example> examples, int sample_size, int take)
     for (i = take; i < sample_size; ++i, ++it);
 
     means.push_back(example_mean(sample));
+  }
+
+  return means;
+}
+
+/**
+ * sample_majority - Treat the examples list as a list of samples; for each
+ * sample_size elements, take the majority vote over take of them.
+ */
+vector<Example>
+sample_majority(vector<Example> examples, int sample_size, int take)
+{
+  int i;
+  vector<Example>::iterator it;
+  vector<Example> means;
+
+  it = examples.begin();
+
+  while (it != examples.end()) {
+    vector<Example> sample;
+
+    for (i = 0; i < take; ++i, ++it) {
+      sample.push_back(*it);
+    }
+    for (i = take; i < sample_size; ++i, ++it);
+
+    means.push_back(example_majority(sample));
   }
 
   return means;
