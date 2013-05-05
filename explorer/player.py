@@ -3,7 +3,7 @@ import random
 import time
 
 
-BOUNDS = 20
+BOUNDS = 15
 seen = {}
 for x in range(-BOUNDS, BOUNDS+1):
     for y in range(-BOUNDS, BOUNDS+1):
@@ -77,7 +77,7 @@ def colorize(s):
         return s
     return s
 
-def print_board():
+def print_board(pos=None):
     nut, pois = 0, 0
     area = 1.0 * (2*BOUNDS + 1) ** 2
 
