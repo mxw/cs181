@@ -53,6 +53,16 @@ def parse_input(fname, n)
 end
 
 #
+# sample_average - Treat the examples list as a list of samples; for each
+# sample_size elements, average ntake of them.
+#
+def sample_average(examples, sample_size, ntake)
+  examples.each_slice(sample_size).map do |sample|
+    sample.take(ntake).mean
+  end
+end
+
+#
 # Compute the square distance between two vectors.
 #
 def square_distance(x, y)
@@ -160,7 +170,7 @@ def autoclass_cluster(examples, ksize, epsilon)
 
       ksize.times do |k|
         p[k] = dsize.times.inject(Math.log(theta_c[k])) do |p, d|
-          p + Math.log(x[d] == 1 ? theta_attrs[k][d] : 1 - theta_attrs[k][d])
+          p + Math.log(x[d] > 0.5 ? theta_attrs[k][d] : 1 - theta_attrs[k][d])
         end
       end
 
@@ -173,7 +183,7 @@ def autoclass_cluster(examples, ksize, epsilon)
         # Update our expectations.
         n[k] += gamma[i][k]
         dsize.times do |d|
-          n_attrs[k][d] += gamma[i][k] if x[d] == 1
+          n_attrs[k][d] += gamma[i][k] if x[d] > 0.5
         end
       end
     end
@@ -213,12 +223,15 @@ end
 #  Main routine.
 #
 
+SAMPLES = 10
+
 @options = OpenStruct.new
 @options.file = '../data/plants0.dat'
 @options.test = '../data/plants1.dat'
 @options.k = [3, 1]
 @options.n = 10000
 @options.eps = 0.000001
+@options.samps = nil
 @options.raw = false
 
 OptionParser.new do |opts|
@@ -233,7 +246,7 @@ OptionParser.new do |opts|
   end
 
   opts.on("-k", "--num-clusters K0,K1", Array, "Number of clusters") do |o|
-    abort 'Two k-values required' unless o.size == 2
+    abort 'Please provide two values of K' unless o.size == 2
     @options.k = o.map { |k| k.to_i }
   end
 
@@ -243,6 +256,11 @@ OptionParser.new do |opts|
 
   opts.on("-e", "--epsilon E", Float, "Convergence epsilon") do |o|
     @options.eps = o
+  end
+
+  opts.on("-s", "--sample-size S0,S1", Array, "Average S from each sample") do |o|
+    abort 'Please provide two values of S' unless o.size == 2
+    @options.samps = o.map { |s| s.to_i }
   end
 
   opts.on("-r", "--raw-output", "Print raw output for writeup") do |o|
@@ -255,6 +273,13 @@ abort USAGE if ARGV[0].nil?
 # Extract plant images.
 poisonous, nutritious = parse_input(@options.file, @options.n)
 ptest, ntest = parse_input(@options.test, @options.n)
+
+if not @options.samps.nil?
+  poisonous = sample_average(poisonous, SAMPLES, @options.samps[0])
+  nutritious = sample_average(nutritious, SAMPLES, @options.samps[0])
+  ptest = sample_average(ptest, SAMPLES, @options.samps[1])
+  ntest = sample_average(ntest, SAMPLES, @options.samps[1])
+end
 
 case ARGV[0]
 when 'kmeans'
