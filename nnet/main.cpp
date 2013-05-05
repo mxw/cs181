@@ -4,6 +4,7 @@
 
 #include <cstdio>
 #include <cstdlib>
+#include <fstream>
 #include <iostream>
 #include <sstream>
 #include <unistd.h>
@@ -17,7 +18,7 @@ using namespace std;
 #define USAGE "Usage: ./main -e EPOCHS -r RATE -l LAYERS [-h HIDDENS]\n"
 
 #define IMGSIZE 36
-#define SAMPLES 10
+#define SAMPLES 20
 #define LIMIT   75000
 
 #define TRAIN_FILE  "../data/plants0.dat"
@@ -33,6 +34,7 @@ main(int argc, char *argv[])
   vector<unsigned> samples;
   vector<unsigned> hiddens;
   istringstream iss;
+  ofstream f;
 
   epochs = 0;
   layers = 0;
@@ -140,6 +142,7 @@ main(int argc, char *argv[])
     test_set  = sample_average(test_set,  SAMPLES, samples[1]);
   }
 
+  // Create the neural network.
   vector<unsigned> spec;
   spec.push_back(IMGSIZE);
   spec.insert(spec.end(), hiddens.begin(), hiddens.end());
@@ -148,7 +151,17 @@ main(int argc, char *argv[])
   NeuralNetwork network(spec, -0.01, 0.01);
   network.setVerbose(verbose);
 
+  // Train.
   network.train(train_set, valid_set, rate, epochs);
+
+  // Write out the final weights.
+  f.open("weights.out");
+  vector<double>::iterator it;
+  vector<double> weights = network.save();
+
+  for (it = weights.begin(); it != weights.end(); ++it) {
+    f << *it << " ";
+  }
 
   printf(
       "Performance\n"
