@@ -93,7 +93,10 @@ def k_means_cluster(examples, ksize)
     end
 
     # Check for convergence.
-    break means if prev == clusters
+    if prev == clusters
+      puts 'MSE: %f' % mean_squared_error(clusters)
+      break means
+    end
 
     # Update means.  If we found an empty cluster, initialize its corresponding
     # mean to a random example.
@@ -199,6 +202,7 @@ def autoclass_cluster(examples, ksize, epsilon)
   examples.size.times do |i|
     clusters[gamma[i].each_with_index.max.last] << examples[i]
   end
+  puts 'MSE: %f' % mean_squared_error(clusters)
 
   clusters.map(&:mean)
 end
@@ -214,7 +218,7 @@ end
 @options.test = '../data/plants1.dat'
 @options.k = [3, 1]
 @options.n = 10000
-@options.eps = 0.0001
+@options.eps = 0.000001
 @options.raw = false
 
 OptionParser.new do |opts|
