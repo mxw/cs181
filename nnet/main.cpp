@@ -19,6 +19,10 @@ using namespace std;
 #define IMGSIZE 36
 #define SAMPLES 10
 
+#define TRAIN_FILE  "../data/plants4.dat"
+#define VALID_FILE  "../data/plants2.dat"
+#define TEST_FILE   "../data/plants3.dat"
+
 int
 main(int argc, char *argv[])
 {
@@ -125,9 +129,9 @@ main(int argc, char *argv[])
 
   vector<Example> train_set, valid_set, test_set;
 
-  train_set = encode_images(file_get_images("../data/plants1.dat", -1));
-  valid_set = encode_images(file_get_images("../data/plants2.dat", 2000));
-  test_set  = encode_images(file_get_images("../data/plants3.dat", 2000));
+  train_set = encode_images(file_get_images(TRAIN_FILE, -1));
+  valid_set = encode_images(file_get_images(VALID_FILE, 2000));
+  test_set  = encode_images(file_get_images(TEST_FILE,  2000));
 
   if (samples.size() != 0) {
     train_set = sample_average(train_set, SAMPLES, samples[0]);
