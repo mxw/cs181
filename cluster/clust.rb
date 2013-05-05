@@ -230,7 +230,7 @@ OptionParser.new do |opts|
 
   opts.on("-k", "--num-clusters K0,K1", Array, "Number of clusters") do |o|
     abort 'Two k-values required' unless o.size == 2
-    @options.k = o
+    @options.k = o.map { |k| k.to_i }
   end
 
   opts.on("-n", "--num-examples N", Integer, "Number of examples") do |o|
