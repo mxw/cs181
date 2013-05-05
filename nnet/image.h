@@ -22,4 +22,7 @@ public:
 std::vector<Image> file_get_images(const char *filename, int limit);
 std::vector<Example> encode_images(std::vector<Image> images);
 
+std::vector<Image> sample_average(std::vector<Image> images, int sample_size,
+    int take);
+
 #endif /* __NEURAL_NETWORK_IMAGES_H__ */

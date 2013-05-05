@@ -21,6 +21,9 @@ struct Example {
   std::vector<double> target;
 };
 
+std::vector<Example> sample_average(std::vector<Example> examples,
+    int sample_size, int take);
+
 /**
  * Neural network edges.
  */
