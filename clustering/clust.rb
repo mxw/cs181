@@ -38,13 +38,18 @@ end
 #
 
 #
-# parse_input - Parse n lines of data from an image file as flat vectors.
+# parse_input - Parse n lines of data from an image file as flat vectors,
+# stratified by classification.
 #
 def parse_input(fname, n)
-  File.open(fname, 'r').each.each_slice(7).take(n).inject([]) do |ex, img|
-    nutritious = img[0][1..-1].to_f
-    ex << Vector[nutritious, *img[1..-1].join.strip.split.map(&:to_f)]
+  examples = Array.new(2) { Array.new }
+
+  File.open(fname, 'r').each.take(7*n).each_slice(7) do |img|
+    i = img.shift[1..-1].to_i
+    examples[i] << Vector[*img.join.strip.split.map(&:to_f)]
   end
+
+  examples
 end
 
 #
@@ -88,13 +93,21 @@ def k_means_cluster(examples, ksize)
     end
 
     # Check for convergence.
-    break clusters if prev == clusters
+    break means if prev == clusters
 
     # Update means.  If we found an empty cluster, initialize its corresponding
     # mean to a random example.
     means = clusters.map(&:mean)
     means.map { |mu| if mu.nil? then examples.sample else mu end }
   end
+end
+
+#
+# nearest_k_mean - Determines the mean closest to a given example, along with
+# its square distance from the mean.
+#
+def nearest_k_mean(x, means)
+  means.map { |mu| [mu, square_distance(mu, x)] }.min_by(&:last)
 end
 
 
@@ -256,8 +269,9 @@ end
 
 @options = OpenStruct.new
 @options.file = '../data/plants0.dat'
-@options.k = 2
-@options.n = 1000
+@options.test = '../data/plants1.dat'
+@options.k = [3, 1]
+@options.n = 10000
 @options.raw = false
 
 OptionParser.new do |opts|
@@ -267,7 +281,12 @@ OptionParser.new do |opts|
     @options.file = o
   end
 
-  opts.on("-k", "--num-clusters K", Integer, "Number of clusters") do |o|
+  opts.on("-t", "--testfile FILE", String, "Test file") do |o|
+    @options.test = o
+  end
+
+  opts.on("-k", "--num-clusters K0,K1", Array, "Number of clusters") do |o|
+    abort 'Two k-values required' unless o.size == 2
     @options.k = o
   end
 
@@ -282,21 +301,34 @@ end.parse!
 
 abort USAGE if ARGV[0].nil?
 
-# Extract images.
-data = parse_input(@options.file, @options.n)
+# Extract plant images.
+poisonous, nutritious = parse_input(@options.file, @options.n)
+ptest, ntest = parse_input(@options.test, @options.n)
 
 case ARGV[0]
 when 'kmeans'
-  clusters = k_means_cluster(data, @options.k)
+  pmeans = k_means_cluster(poisonous, @options.k[0])
+  nmeans = k_means_cluster(nutritious, @options.k[1])
 
-  # Output mean squared error if desired.
-  if @options.raw
-    puts mean_squared_error(clusters)
+  correct = 0
+
+  ntest.each do |x|
+    _, ndist = nearest_k_mean(x, nmeans)
+    _, pdist = nearest_k_mean(x, pmeans)
+
+    correct += 1 if ndist < pdist
   end
+
+  ptest.each do |x|
+    _, ndist = nearest_k_mean(x, nmeans)
+    _, pdist = nearest_k_mean(x, pmeans)
+
+    correct += 1 if pdist < ndist
+  end
+
+  puts 'Performance: %f' % (correct / (ntest.size + ptest.size).to_f)
 when 'autoclass'
   abort 'Autoclass unimplemented'
 else
   abort 'Invalid clustering algorithm'
 end
-
-clusters.map(&:mean).each { |mu| p mu } if not @options.raw
