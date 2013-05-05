@@ -1,5 +1,4 @@
 tags
 obj/
 .deps/
-
-nnet/nnet
+main

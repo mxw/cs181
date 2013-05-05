@@ -1,5 +1,5 @@
 #
-# Toplevel make for CS181 final project.
+# Toplevel make for neural net implementation.
 #
 # The source tree is mirrored in the build target obj/.  Binaries are created
 # in the same directories as their mains.  Dependencies are stored in the .deps
@@ -20,17 +20,17 @@ DEPDIR = .deps
 SOURCES := $(shell find $(SRCDIR) -name '*.cpp')
 HEADERS := $(shell find $(SRCDIR). -name '*.h')
 
-MAINS = $(SRCDIR)/nnet/main.cpp
+MAINS = $(SRCDIR)/main.cpp
 
 OBJS = $(addprefix $(OBJDIR)/,$(patsubst %.cpp,%.o,$(filter-out $(MAINS),$(SOURCES))))
 
-all: $(OBJS) nnet tags
+all: $(OBJS) main tags
 
 define mkbin
 $(CC) $^ -o $(subst $(OBJDIR)/,,$(<D))/$@
 endef
 
-nnet: $(OBJDIR)/$(SRCDIR)/nnet/main.o $(OBJS); $(mkbin)
+main: $(OBJDIR)/$(SRCDIR)/main.o $(OBJS); $(mkbin)
 
 $(OBJDIR)/%.o: %.cpp
 	@mkdir -p $(@D)
@@ -41,6 +41,6 @@ tags: $(SOURCES) $(HEADERS)
 	ctags -R
 
 clean:
-	-rm -rf $(DEPDIR) $(OBJDIR) *.pyc $(SRCDIR)/nnet/main
+	-rm -rf $(DEPDIR) $(OBJDIR) $(SRCDIR)/main
 
 .PHONY: all clean tags
