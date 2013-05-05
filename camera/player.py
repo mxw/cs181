@@ -3,7 +3,7 @@ import time
 from itertools import *
 import game_interface
 
-BOUNDS = 25
+BOUNDS = 20
 NIMGS = 10
 
 plants = []
