@@ -117,115 +117,60 @@ end
 #
 
 #
-# Autoclass errors.
+# logsumexp - Given an array [ln(x_1), ..., ln(x_n)], make use of log
+# identities to compute ln(x_1 + ... + x_n).
 #
-class AutoclassVectorMismatchError < StandardError; end
-class AutoclassAttrKindError < StandardError; end
-
-class BernoulliParams
-  def initialize(examples)
-    @p = prng.rand
-  end
-
-  def prob(feature)
-    feature ? @p : 1 - @p
-  end
-end
-
-class GaussianParams
-  def initialize(examples)
-    @mu = examples.mean
-    @sig = examples.variance
-  end
-
-  def prob(feature)
-    Rubystats::NormalDistribution.new(@mu, @sig).pdf(feature)
-  end
+def logsumexp(logs)
+  ml = logs.max
+  ml + Math.log(logs.inject(0.0) { |a, l| a + Math.exp(l - ml) })
 end
 
 #
 # Autoclass algorithm.
 #
-def autoclass_cluster(examples, ksize, epsilon, attr_kinds)
-  unless attr_kinds.size == examples.first.size
-    raise AutoclassVectorMismatchError
-  end
-
+def autoclass_cluster(examples, ksize, epsilon)
   prng = Random.new(0)
-  dsize = attr_kinds.size
+  dsize = examples.first.size
 
   # Parameter of cluster distribution.  Modeled by a categorical distribution
   # and thus equal to p(C = k).
   theta_c = Array.new(ksize) { 1 / ksize.to_f }
 
-  # Perform k-means clustering to initialize continuous parameters.
-  k_clusts = k_means_cluster(examples, ksize)
+  # Parameters of feature distribution conditional on cluster.  This is modeled
+  # by a Bernoulli distribution and is equal to p(X_d = 1 | C = k).
+  theta_attrs = Array.new(ksize) { Array.new(dsize) { prng.rand } }
 
-  # Parameter(s) of feature distribution conditional on cluster.
-  #
-  # For binary attributes, this is modeled by a Bernoulli distribution and thus
-  # is equal to p(X_d >= 0.5 | C = k).  (Note that we assume binary features
-  # range between 0.0 and 1.0 and should be divided at the midpoint.)
-  #
-  # For continuous attributes, this is modeled by a Gaussian distribution and
-  # is the array [mu, sigma^2] of the Gaussian parameters.
-  theta_attrs = Array.new(ksize) do |k|
-    Array.new(dsize) do |d|
-      case attr_kinds[d]
-      when :bin
-        # Choose a random p for Bernoulli.
-        prng.rand
-      when :cn
-        # Initialize mu and sigma^2 based on k-means clusters.
-        attrs = k_clusts[k].map { |x| x[d] }
-        [attrs.mean, attrs.variance]
-      else
-        raise AutoclassAttrKindError
-      end
-    end
-  end
-
-  # Posterior probabilities of clusters; p(C = k | x).
+  # Posterior probabilities of clusters; p(C = k | X = x_i).
   gamma = Array.new(examples.size) { Array.new(ksize) { 0.0 } }
 
   loop do
     # Expected cluster sizes.
     n = Array.new(ksize) { 0.0 }
 
-    # Expected number of examples in each cluster with positive binary feature
-    # d.  Ignored for continuous features.
+    # Expected number of examples with feature d in each cluster.
     n_attrs = Array.new(ksize) { Array.new(dsize) { 0.0 } }
-
-    # Expected likelihood; p(x).
-    px = Array.new(examples.size) { 0.0 }
 
     # Re-estimate posterior probability.
     examples.each_with_index do |x, i|
-      # p(C = k) p(x | C = k)
+      # log of p(C = k) p(x | C = k).
       p = Array.new(ksize) { 0.0 }
 
       ksize.times do |k|
-        p[k] = dsize.times.inject(theta_c[k]) do |p, d|
-          case attr_kinds[d]
-          when :bin
-            p * (x[d] ? theta_attrs[k][d] : 1 - theta_attrs[k][d])
-          when :cn
-            p * gaussian(x[d], *theta_attrs[k][d])
-          end
+        p[k] = dsize.times.inject(Math.log(theta_c[k])) do |p, d|
+          p + Math.log(x[d] == 1 ? theta_attrs[k][d] : 1 - theta_attrs[k][d])
         end
       end
 
-      px[i] = p.inject(:+)
+      denom = logsumexp(p)
 
-      # Update the posteriors.
       ksize.times do |k|
-        gamma[i][k] = p[k] / px[i]
-        n[k] += gamma[i][k]
+        # Compute the posterior.
+        gamma[i][k] = p[k] / denom
 
+        # Update our expectations.
+        n[k] += gamma[i][k]
         dsize.times do |d|
-          if attr_kinds[d] == :bin and x[d] > 0.5
-            n_attrs[k][d] += gamma[i][k]
-          end
+          n_attrs[k][d] += gamma[i][k] if x[d] == 1
         end
       end
     end
@@ -245,20 +190,17 @@ def autoclass_cluster(examples, ksize, epsilon, attr_kinds)
       end
     end
 
-    # Print log likelihood.
-    puts px.map { |p| Math.log(p) }.inject(:+) if @options.raw
-
     break if converged
   end
 
   clusters = Array.new(ksize) { [] }
 
-  # Choose clusters.
+  # Choose clusters based on the maximum posterior.
   examples.size.times do |i|
-    clusters[gamma[i].each_with_index.min.last] << examples[i]
+    clusters[gamma[i].each_with_index.max.last] << examples[i]
   end
 
-  clusters
+  clusters.map(&:mean)
 end
 
 
@@ -272,6 +214,7 @@ end
 @options.test = '../data/plants1.dat'
 @options.k = [3, 1]
 @options.n = 10000
+@options.eps = 0.0001
 @options.raw = false
 
 OptionParser.new do |opts|
@@ -294,6 +237,10 @@ OptionParser.new do |opts|
     @options.n = o
   end
 
+  opts.on("-e", "--epsilon E", Float, "Convergence epsilon") do |o|
+    @options.eps = o
+  end
+
   opts.on("-r", "--raw-output", "Print raw output for writeup") do |o|
     @options.raw = o
   end
@@ -309,26 +256,28 @@ case ARGV[0]
 when 'kmeans'
   pmeans = k_means_cluster(poisonous, @options.k[0])
   nmeans = k_means_cluster(nutritious, @options.k[1])
-
-  correct = 0
-
-  ntest.each do |x|
-    _, ndist = nearest_k_mean(x, nmeans)
-    _, pdist = nearest_k_mean(x, pmeans)
-
-    correct += 1 if ndist < pdist
-  end
-
-  ptest.each do |x|
-    _, ndist = nearest_k_mean(x, nmeans)
-    _, pdist = nearest_k_mean(x, pmeans)
-
-    correct += 1 if pdist < ndist
-  end
-
-  puts 'Performance: %f' % (correct / (ntest.size + ptest.size).to_f)
 when 'autoclass'
-  abort 'Autoclass unimplemented'
+  pmeans = autoclass_cluster(poisonous, @options.k[0], @options.eps)
+  nmeans = autoclass_cluster(nutritious, @options.k[1], @options.eps)
 else
   abort 'Invalid clustering algorithm'
 end
+
+# Test performance.
+correct = 0
+
+ntest.each do |x|
+  _, ndist = nearest_k_mean(x, nmeans)
+  _, pdist = nearest_k_mean(x, pmeans)
+
+  correct += 1 if ndist < pdist
+end
+
+ptest.each do |x|
+  _, ndist = nearest_k_mean(x, nmeans)
+  _, pdist = nearest_k_mean(x, pmeans)
+
+  correct += 1 if pdist < ndist
+end
+
+puts 'Performance: %f' % (correct / (ntest.size + ptest.size).to_f)
