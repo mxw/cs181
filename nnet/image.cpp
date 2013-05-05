@@ -25,7 +25,7 @@ Image::getPixelEncoding()
 
   for (it = this->pixels.begin(); it != this->pixels.end(); ++it) {
     for (jt = it->begin(); jt != it->end(); ++jt) {
-      encoding.push_back(*jt / 256.0);
+      encoding.push_back((double)*jt);
     }
   }
 

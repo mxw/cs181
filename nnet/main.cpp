@@ -16,6 +16,8 @@ using namespace std;
 
 #define USAGE "Usage: ./main -e EPOCHS -r RATE -l LAYERS [-h HIDDENS]\n"
 
+#define IMGSIZE 36
+
 int
 main(int argc, char *argv[])
 {
@@ -29,6 +31,11 @@ main(int argc, char *argv[])
   layers = 0;
   rate = 0.0;
   verbose = false;
+
+  if (argc < 7) {
+    fprintf(stderr, USAGE);
+    return 1;
+  }
 
   while ((c = getopt(argc, argv, "e:r:l:h:v")) != -1) {
     switch (c) {
@@ -100,12 +107,12 @@ main(int argc, char *argv[])
 
   vector<Example> train_set, valid_set, test_set;
 
-  train_set = encode_images(file_get_images("corpus/training-9k.txt", -1));
-  valid_set = encode_images(file_get_images("corpus/validation-1k.txt", -1));
-  test_set  = encode_images(file_get_images("corpus/test-1k.txt", -1));
+  train_set = encode_images(file_get_images("../data/plants1.dat", -1));
+  valid_set = encode_images(file_get_images("../data/plants2.dat", 2000));
+  test_set  = encode_images(file_get_images("../data/plants3.dat", 2000));
 
   vector<unsigned> spec;
-  spec.push_back(196);
+  spec.push_back(IMGSIZE);
   spec.insert(spec.end(), hiddens.begin(), hiddens.end());
   spec.push_back(NLABELS);
 

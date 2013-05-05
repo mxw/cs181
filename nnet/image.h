@@ -8,7 +8,7 @@
 
 #include "neural_network.h"
 
-#define NLABELS 10
+#define NLABELS 2
 
 class Image {
 public:
