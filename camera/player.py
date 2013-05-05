@@ -4,7 +4,7 @@ from itertools import *
 import game_interface
 
 BOUNDS = 20
-NIMGS = 10
+NIMGS = 20
 
 plants = []
 life, prev_life = 100, 100
