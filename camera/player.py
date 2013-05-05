@@ -7,7 +7,7 @@ BOUNDS = 25
 NIMGS = 10
 
 plants = []
-life, prev_life = 0, 0
+life, prev_life = 100, 100
 target = (-BOUNDS, -BOUNDS)
 
 f = open('plants.dat', 'a')
@@ -39,9 +39,11 @@ def get_move(view):
     pos = (view.GetXPos(), view.GetYPos())
     prev_life, life = life, view.GetLife()
 
+    should_eat = pos == target and has_plant
+
     # Write out the data for all plant images we obtained.
     if plants:
-        nutritious = life - prev_life >= 0
+        nutritious = life > prev_life
 
         for plant in plants:
             image = '\n'.join([' '.join(row) for row in plant])
@@ -68,4 +70,4 @@ def get_move(view):
     else:
         move = next_move(pos, target)
 
-    return (move, pos == target and has_plant)
+    return (move, should_eat)
