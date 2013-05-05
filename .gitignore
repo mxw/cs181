@@ -1,5 +1,4 @@
-tags
-obj/
-.deps/
-
-nnet/nnet
+player/tags
+player/obj/
+player/.deps/
+player/nnet/nnet
