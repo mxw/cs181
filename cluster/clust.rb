@@ -63,6 +63,17 @@ def sample_average(examples, sample_size, ntake)
 end
 
 #
+# sample_majority - Treat the examples list as a list of samples; for each
+# sample_size elements, take the majority vote of ntake of them.
+#
+def sample_majority(examples, sample_size, ntake)
+  examples.each_slice(sample_size).map do |sample|
+    votes = sample.take(ntake).inject(:+)
+    votes.map { |v| v > ntake / 2 ? 1.0 : 0.0 }
+  end
+end
+
+#
 # Compute the square distance between two vectors.
 #
 def square_distance(x, y)
