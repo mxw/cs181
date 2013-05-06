@@ -60,7 +60,7 @@ def dist((x,y), (nx,ny)):
 # assume uniform density at the start
 PLANT_PRIOR_DENSITY = 330.0 / 1680
 
-BIN_RADIUS = 3
+BIN_RADIUS = 4
 BIN_AREA = float((BIN_RADIUS + 1) ** 2)
 
 density = {}
@@ -126,12 +126,12 @@ def update_density(pos, plant, ate_plant=True):
         density[pos] = -9999
     elif plant == 'U':
         for n_pos in neighbors(pos, BIN_RADIUS):
-            density[n_pos] += 5 * PLANT_PRIOR_DENSITY / BIN_AREA * (BIN_RADIUS - dist(pos, n_pos) + 1) / (BIN_RADIUS + 1)
+            density[n_pos] += 1 * PLANT_PRIOR_DENSITY / BIN_AREA * (BIN_RADIUS - dist(pos, n_pos) + 1) / (BIN_RADIUS + 1)
         assert not ate_plant
     elif plant == 'P':
         density[pos] = -9999
         for n_pos in neighbors(pos, BIN_RADIUS):
-            density[n_pos] -= 1 * PLANT_PRIOR_DENSITY / BIN_AREA * (BIN_RADIUS - dist(pos, n_pos) + 1) / (BIN_RADIUS + 1)
+            density[n_pos] -= 2 * PLANT_PRIOR_DENSITY / BIN_AREA * (BIN_RADIUS - dist(pos, n_pos) + 1) / (BIN_RADIUS + 1)
     elif plant == 'N':
         density[pos] = -9999 
         for n_pos in neighbors(pos, BIN_RADIUS):
@@ -139,7 +139,7 @@ def update_density(pos, plant, ate_plant=True):
                 # other player already ate this nutritious plant - he probably ate others in the area as well
                 nut_weight = - 2
             else:
-                nut_weight = 12
+                nut_weight = 20
             density[n_pos] += nut_weight * PLANT_PRIOR_DENSITY / BIN_AREA * (BIN_RADIUS - dist(pos, n_pos) + 1) / (BIN_RADIUS + 1)
         density[pos] = -9999
 
@@ -148,25 +148,25 @@ SEARCH_RADIUS = 2
 def densest_pos(cur_pos=None):
     max_density = 0
     best_pos = []
-    for pos in neighbors(cur_pos, SEARCH_RADIUS):
-        if density[pos] > max_density:
-            best_pos = [pos]
-            max_density = density[pos]
-        elif density[pos] == max_density:
-            best_pos.append(pos)
 
-    
-
+    radius_buff = 0
     if cur_pos != None:
-        # best_pos = filter(lambda bp: density[bp] > MOVE_THRESHOLD, neighbors(cur_pos, 5))
-        if len(best_pos) == 0:
-            best_pos = neighbors(cur_pos, SEARCH_RADIUS)
-        # print best_pos, cur_pos
+        while len(best_pos) == 0:
+            for pos in neighbors(cur_pos, SEARCH_RADIUS + radius_buff):
+                if density[pos] > max_density:
+                    best_pos = [pos]
+                    max_density = density[pos]
+                elif density[pos] == max_density:
+                    best_pos.append(pos)
+
+            
+            radius_buff += 1
+            
+                # best_pos = filter(lambda bp: density[bp] > MOVE_THRESHOLD, neighbors(cur_pos, 5))
+                # print best_pos, cur_pos
         move = random.choice(sorted(best_pos, key=lambda bp: dist(cur_pos, bp))[0:4])
-        # print sorted(map(lambda bp: dist(cur_pos, bp), best_pos))
         return move 
-    return best_pos[0]
-    return random.choice(best_pos)
+    return random.choice(GRID)
 
 def next_target((X, Y)):
     if Y == BOUNDS:
@@ -232,9 +232,9 @@ def get_move(view):
             other[(X,Y)] = True
             pass
 
-    time.sleep(0.1)
+    # time.sleep(0.1)
 
-    print_board((X,Y))
+    # print_board((X,Y))
 
 
     # Figure out whether to eat the plant or not...
@@ -243,8 +243,10 @@ def get_move(view):
         for i in range(IMAGES_TO_ASK_FOR):
             images.append(view.GetImage())
 
+        confidence = network.confidence(average_images(images), 1)
+        confidence = 1.0 if confidence >= 0.5 else confidence / 2
 
-        belief[(X,Y)] = 'N' if network.actuate(average_images(images)) else 'P'
+        belief[(X,Y)] = 'N' if random.random() < confidence else 'P'
 
         # # if we are in a region with high enough density, eat anyway...
         # if (X,Y) in GRID and belief[(X,Y)] == 'P' and density[(X,Y)] > PLANT_PRIOR_DENSITY + 0.05:
@@ -257,10 +259,10 @@ def get_move(view):
     hungry = has_plant and (X,Y) in GRID and belief[(X, Y)] != 'P'
 
     # get hungry randomly
-    if has_plant and (X,Y) in GRID and belief[(X, Y)] != 'P':
-        if view.GetLife() < 50:
-            if random.random() < (50 - view.GetLife()) / 100.0:
-                hungry = True
+    # if has_plant and (X,Y) in GRID and belief[(X, Y)] != 'P':
+    #     if view.GetLife() < 50:
+    #         if random.random() < (50 - view.GetLife()) / 100.0:
+    #             hungry = True
 
     
 
