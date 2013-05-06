@@ -154,13 +154,20 @@ main(int argc, char *argv[])
   // Train.
   network.train(train_set, valid_set, rate, epochs);
 
-  // Write out the final weights.
+  // Write out the network.
   f.open("weights.out");
-  vector<double>::iterator it;
   vector<double> weights = network.save();
 
-  for (it = weights.begin(); it != weights.end(); ++it) {
-    f << *it << " ";
+  vector<unsigned>::iterator lt;
+  vector<double>::iterator wt;
+
+  for (lt = spec.begin(); lt != spec.end(); ++lt) {
+    f << *lt << " ";
+  }
+  f << "\n";
+
+  for (wt = weights.begin(); wt != weights.end(); ++wt) {
+    f << *wt << " ";
   }
 
   printf(
