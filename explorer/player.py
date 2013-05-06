@@ -3,7 +3,7 @@ import random
 import time
 
 
-BOUNDS = 15
+BOUNDS = 12
 seen = {}
 for x in range(-BOUNDS, BOUNDS+1):
     for y in range(-BOUNDS, BOUNDS+1):

@@ -16,7 +16,7 @@ absolute_path = os.path.dirname(os.path.abspath(__file__)) + '/' + WEIGHTS_FILE
 
 network = nnet.NeuralNetwork.Import(absolute_path)
 
-IMAGES_TO_ASK_FOR = 4
+IMAGES_TO_ASK_FOR = 3
 
 def average_images(l):
     print l
@@ -65,7 +65,10 @@ BIN_AREA = float((BIN_RADIUS + 1) ** 2)
 
 density = {}
 for pos in GRID:
-    density[pos] = PLANT_PRIOR_DENSITY
+    if dist(pos, (0,0)) < BOUNDS * 1.75: 
+        density[pos] = PLANT_PRIOR_DENSITY
+    else:
+        density[pos] = -PLANT_PRIOR_DENSITY
 
 other = {}
 for pos in GRID:
@@ -144,7 +147,7 @@ def update_density(pos, plant, ate_plant=True):
             density[n_pos] += nut_weight * PLANT_PRIOR_DENSITY / BIN_AREA * (BIN_RADIUS - dist(pos, n_pos) + 1) / (BIN_RADIUS + 1)
         density[pos] = -9999
 
-SEARCH_RADIUS = 2
+SEARCH_RADIUS = 3
 
 def densest_pos(cur_pos=None):
     max_density = PLANT_PRIOR_DENSITY
