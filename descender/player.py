@@ -9,15 +9,12 @@ import os
 # Neural Network / Classification code
 ########################################
 
-network = nnet.NeuralNetwork([36, 10, 10, 2], -0.01, 0.01)
+
 
 WEIGHTS_FILE = 'weights.out'
 absolute_path = os.path.dirname(os.path.abspath(__file__)) + '/' + WEIGHTS_FILE
 
-with open(absolute_path, 'r') as f:
-    weights = [float(w) for w in f.read().split()]
-
-network.restore(weights)
+network = nnet.NeuralNetwork.Import(absolute_path)
 
 IMAGES_TO_ASK_FOR = 4
 
@@ -83,6 +80,7 @@ update_matrix[('.','U')] = PLANT_PRIOR_DENSITY / BIN_AREA
 update_matrix[('.','P')] = -PLANT_PRIOR_DENSITY / BIN_AREA * 2
 
 ## Life totals
+starting_life = 100
 prev_life = None
 prev_pos = None
 
@@ -145,7 +143,7 @@ def update_density(pos, plant, ate_plant=True):
             density[n_pos] += nut_weight * PLANT_PRIOR_DENSITY / BIN_AREA * (BIN_RADIUS - dist(pos, n_pos) + 1) / (BIN_RADIUS + 1)
         density[pos] = -9999
 
-SEARCH_RADIUS = 3
+SEARCH_RADIUS = 2
 
 def densest_pos(cur_pos=None):
     max_density = 0
@@ -240,22 +238,31 @@ def get_move(view):
 
 
     # Figure out whether to eat the plant or not...
-    if has_plant and belief[(X,Y)] != 'P':
+    if (X,Y) in GRID and has_plant and belief[(X,Y)] != 'P':
         images = []
         for i in range(IMAGES_TO_ASK_FOR):
             images.append(view.GetImage())
 
 
         belief[(X,Y)] = 'N' if network.actuate(average_images(images)) else 'P'
+
+        # # if we are in a region with high enough density, eat anyway...
+        # if (X,Y) in GRID and belief[(X,Y)] == 'P' and density[(X,Y)] > PLANT_PRIOR_DENSITY + 0.05:
+        #     hungry = has_plant
+        #     belief[(X, Y)] = 'N'
         if belief[(X,Y)] == 'P':
             # don't go back to an image we think is poisonous
             density[(X,Y)] = -9999
 
     hungry = has_plant and (X,Y) in GRID and belief[(X, Y)] != 'P'
 
-    # if we are in a region with high enough density, eat anyway...
-    if (X,Y) in GRID and belief[(X,Y)] == 'P' and density[(X,Y)] > PLANT_PRIOR_DENSITY + 0.05:
-        hungry = has_plant
+    # get hungry randomly
+    if has_plant and (X,Y) in GRID and belief[(X, Y)] != 'P':
+        if view.GetLife() < 50:
+            if random.random() < (50 - view.GetLife()) / 100.0:
+                hungry = True
+
+    
 
     return (next_move((X, Y), target), hungry)
 
