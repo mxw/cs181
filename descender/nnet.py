@@ -60,7 +60,7 @@ class Neuron:
         self.activation = sigmoid(self.activation)
 
 class NeuralNetwork:
-    def __init__(self, spec, wmin, wmax):
+    def __init__(self, spec):
         self.layers = [[] for _ in spec]
         self.inputs = self.layers[0]
         self.outputs = self.layers[-1]
