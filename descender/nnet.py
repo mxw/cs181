@@ -104,6 +104,10 @@ class NeuralNetwork:
 
         return self
 
+    def confidence(self, inputv, c):
+        self.feedForward(inputv)
+        return self.outputs[c].activation
+
     def actuate(self, inputv):
         self.feedForward(inputv)
 
