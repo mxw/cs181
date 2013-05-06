@@ -122,31 +122,32 @@ def update_density(pos, plant, ate_plant=True):
         vis[pos] = True
     if plant == NO_PLANT_CHAR:
         for n_pos in neighbors(pos, BIN_RADIUS):
-            density[n_pos] -= 4 * PLANT_PRIOR_DENSITY / BIN_AREA * (BIN_RADIUS - dist(pos, n_pos) + 1) / (BIN_RADIUS + 1)
+            density[n_pos] -= 1 * PLANT_PRIOR_DENSITY / BIN_AREA * (BIN_RADIUS - dist(pos, n_pos) + 1) / (BIN_RADIUS + 1)
         density[pos] = -9999
     elif plant == 'U':
         for n_pos in neighbors(pos, BIN_RADIUS):
-            density[n_pos] += 1 * PLANT_PRIOR_DENSITY / BIN_AREA * (BIN_RADIUS - dist(pos, n_pos) + 1) / (BIN_RADIUS + 1)
+            density[n_pos] -= 2 * PLANT_PRIOR_DENSITY / BIN_AREA * (BIN_RADIUS - dist(pos, n_pos) + 1) / (BIN_RADIUS + 1)
+        density[pos] = -9999
         assert not ate_plant
     elif plant == 'P':
         density[pos] = -9999
         for n_pos in neighbors(pos, BIN_RADIUS):
-            density[n_pos] -= 2 * PLANT_PRIOR_DENSITY / BIN_AREA * (BIN_RADIUS - dist(pos, n_pos) + 1) / (BIN_RADIUS + 1)
+            density[n_pos] -= 4 * PLANT_PRIOR_DENSITY / BIN_AREA * (BIN_RADIUS - dist(pos, n_pos) + 1) / (BIN_RADIUS + 1)
     elif plant == 'N':
         density[pos] = -9999 
         for n_pos in neighbors(pos, BIN_RADIUS):
             if other[pos]:
                 # other player already ate this nutritious plant - he probably ate others in the area as well
-                nut_weight = - 2
+                nut_weight = -2
             else:
-                nut_weight = 20
+                nut_weight = 8
             density[n_pos] += nut_weight * PLANT_PRIOR_DENSITY / BIN_AREA * (BIN_RADIUS - dist(pos, n_pos) + 1) / (BIN_RADIUS + 1)
         density[pos] = -9999
 
 SEARCH_RADIUS = 2
 
 def densest_pos(cur_pos=None):
-    max_density = 0
+    max_density = PLANT_PRIOR_DENSITY
     best_pos = []
 
     radius_buff = 0
