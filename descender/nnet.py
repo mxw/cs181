@@ -60,7 +60,7 @@ class Neuron:
         self.activation = sigmoid(self.activation)
 
 class NeuralNetwork:
-    def __init__(self, spec, wmin, wmax):
+    def __init__(self, spec):
         self.layers = [[] for _ in spec]
         self.inputs = self.layers[0]
         self.outputs = self.layers[-1]
@@ -78,6 +78,14 @@ class NeuralNetwork:
 
                 self.weights.append(neuron.bias)
 
+    @staticmethod
+    def Import(path):
+        with open(path, 'r') as f:
+            spec = [int(n) for n in f.readline().split()]
+            weights = [float(w) for w in f.readline().split()]
+
+        return NeuralNetwork(spec).restore(weights)
+
     def feedForward(self, inputv):
         assert len(self.inputs) == len(inputv)
 
@@ -93,6 +101,8 @@ class NeuralNetwork:
 
         for w, v in zip(self.weights, weights):
             w.value = v
+
+        return self
 
     def actuate(self, inputv):
         self.feedForward(inputv)
@@ -142,20 +152,15 @@ def sample_average(examples, sample_size, take):
 
 
 if __name__ == '__main__':
-    network = NeuralNetwork([36, 10, 10, 2], -0.01, 0.01)
-
-    with open('weights.out', 'r') as f:
-        weights = [float(w) for w in f.read().split()]
-
-    network.restore(weights)
+    network = NeuralNetwork.Import('weights.out')
 
     train_set = file_get_examples(TRAIN_FILE, LIMIT)
     valid_set = file_get_examples(VALID_FILE, LIMIT / 10)
     test_set  = file_get_examples(TEST_FILE,  LIMIT / 10)
 
-    train_set = sample_average(train_set, SAMPLES, 6)
-    valid_set = sample_average(valid_set, SAMPLES, 6)
-    test_set  = sample_average(test_set,  SAMPLES, 4)
+    train_set = sample_average(train_set, SAMPLES, 5)
+    valid_set = sample_average(valid_set, SAMPLES, 5)
+    test_set  = sample_average(test_set,  SAMPLES, 3)
 
     print (
         "Performance\n"
