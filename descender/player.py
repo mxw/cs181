@@ -1,7 +1,29 @@
 import game_interface
 import random
 import time
+import nnet
+import os
 
+
+########################################
+# Neural Network / Classification code
+########################################
+
+network = nnet.NeuralNetwork([36, 10, 10, 2], -0.01, 0.01)
+
+WEIGHTS_FILE = 'weights.out'
+absolute_path = os.path.dirname(os.path.abspath(__file__)) + '/' + WEIGHTS_FILE
+
+with open(absolute_path, 'r') as f:
+    weights = [float(w) for w in f.read().split()]
+
+network.restore(weights)
+
+IMAGES_TO_ASK_FOR = 4
+
+def average_images(l):
+    print l
+    return [sum(image[i] for image in l) / float(len(l)) for i in range(len(l[0]))]
 
 ########################################
 # Initial Variables
@@ -73,7 +95,7 @@ NO_PLANT_CHAR = '.'
 MOVE_THRESHOLD = PLANT_PRIOR_DENSITY + 0.01
 
 ########################################
-# Move Logic
+# Move Logic / Density code
 ########################################
 
 # choose the next move given current position and target.
@@ -89,7 +111,7 @@ def neighbors((x, y), r):
     return [(nx, ny) for (nx, ny) in GRID if abs(x - nx) + abs(y - ny) <= r]
 
 
-
+# update the "nutritious" density
 def update_density(pos, plant, ate_plant=True):
     global density
     print pos, plant
@@ -166,7 +188,7 @@ def get_move(view):
     # use life totals to figure out if a plant was eaten
     if view.GetLife() >= prev_life + 15:
         eaten_nut += 1
-        # print "Nutricious", prev_life, view.GetLife()
+        # print "Nutritious", prev_life, view.GetLife()
         seen[prev_pos] = 'N'
         ate_plant = True
     if view.GetLife() <= prev_life - 8:
@@ -217,12 +239,23 @@ def get_move(view):
     print_board((X,Y))
 
 
+    # Figure out whether to eat the plant or not...
+    if has_plant and belief[(X,Y)] != 'P':
+        images = []
+        for i in range(IMAGES_TO_ASK_FOR):
+            images.append(view.GetImage())
 
-    if has_plant:
-        for i in range(3):
-            view.GetImage()
 
-    hungry = (X,Y) in GRID and belief[(X, Y)] != 'P'
+        belief[(X,Y)] = 'N' if network.actuate(average_images(images)) else 'P'
+        if belief[(X,Y)] == 'P':
+            # don't go back to an image we think is poisonous
+            density[(X,Y)] = -9999
+
+    hungry = has_plant and (X,Y) in GRID and belief[(X, Y)] != 'P'
+
+    # if we are in a region with high enough density, eat anyway...
+    if (X,Y) in GRID and belief[(X,Y)] == 'P' and density[(X,Y)] > PLANT_PRIOR_DENSITY + 0.05:
+        hungry = has_plant
 
     return (next_move((X, Y), target), hungry)
 
