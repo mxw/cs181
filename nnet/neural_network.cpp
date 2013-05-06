@@ -38,7 +38,7 @@ example_mean(vector<Example> examples)
   }
 
   for (i = 0; i < ex.input.size(); ++i) {
-    ex.input[i] += examples.size();
+    ex.input[i] /= examples.size();
   }
 
   return ex;

@@ -3,7 +3,6 @@
 #
 
 import math
-import random
 from itertools import *
 
 NLABELS = 2
@@ -73,8 +72,8 @@ class NeuralNetwork:
                 self.layers[i].append(neuron)
 
                 if i > 0:
-                    for other in self.layers[i-1]:
-                        neuron.addPred(other, random.uniform(wmin, wmax))
+                    for pred in self.layers[i-1]:
+                        neuron.addPred(pred)
                         self.weights.append(neuron.preds[-1].weight)
 
                 self.weights.append(neuron.bias)

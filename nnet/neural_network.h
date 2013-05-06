@@ -94,6 +94,7 @@ public:
   double performance(std::vector<Example> const& examples);
 
   std::vector<double> save();
+  void restore(std::vector<double> const& weights);
 
 private:
   void assertComplete();
@@ -101,8 +102,6 @@ private:
 
   void feedForward(std::vector<double> const& input);
   void backPropagate(std::vector<double> const& target, double rate);
-
-  void restore(std::vector<double> const& weights);
 
   bool verbose_;
   std::vector<std::vector<Neuron *> > layers_;
